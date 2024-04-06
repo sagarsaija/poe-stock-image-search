@@ -9,9 +9,6 @@ RUN apt-get update && \
 # Install moviepy via pip
 RUN pip install moviepy
 
-# Install dependencies from the requirements.txt file
-RUN pip install -r server-bot/requirements.txt
-
 # Modify the ImageMagick policy
 RUN sed -i '/<policy domain="path" rights="none" pattern="@\*"/d' /etc/ImageMagick-6/policy.xml
 
@@ -21,9 +18,12 @@ COPY . /app
 # Set the working directory to /app
 WORKDIR /app
 
+# Install dependencies from the requirements.txt file
+RUN pip install -r requirements.txt
+
 # Specify the command to run your application
 # This should be adjusted to how you run your Python application
-CMD ["python", "your_app.py"]
+CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "bot:app"]
 
 # Expose the port your app runs on
-EXPOSE 8080
+EXPOSE 8000
