@@ -7,6 +7,7 @@ import fal_client
 import fastapi_poe as fp
 import httpx
 from dataclasses import dataclass
+import time
 
 POE_ACCESS_KEY = os.getenv("POE_ACCESS_KEY")
 FAL_KEY = os.getenv("FAL_KEY")
@@ -22,61 +23,51 @@ class VideoMaker(fp.PoeBot):
         self, request: fp.QueryRequest
     ) -> AsyncIterable[fp.PartialResponse]:
         message = request.query[-1]
-        images = [
-            attachment
-            for attachment in message.attachments
-            if attachment.content_type.startswith("image/")
-        ]
-        if not images:
-            prompt = message.content
+        prompt = message.content
+
+        yield fp.PartialResponse(text="Searching images\n")
+        for i in range(3):
+            yield fp.PartialResponse(text=".")
+            # todo: search in pexel
+            with open(f"static/sample{i+1}.jpeg", "rb") as f:
+                file_data = f.read()
+            attachment_upload_response = await self.post_message_attachment(
+                message_id=request.message_id,
+                file_data=file_data,
+                filename=f"sample{i+1}.jpeg",
+                is_inline=True,
+            )
+            yield fp.PartialResponse(
+                text=f"![sample][{attachment_upload_response.inline_ref}]\n\n"
+            )
+            time.sleep(0.3)
+        yield fp.PartialResponse(text="\n")
+        
+        yield fp.PartialResponse(text="Creating images\n")
+        for i in range(3):
+            yield fp.PartialResponse(text=".")
             response = await self.fal_client.run(
                 "fal-ai/fast-sdxl",
                 arguments={
                     "prompt": f"a realistic {prompt}, cinematic, ultra hd, high quality, video, cinematic, high quality",
                     "negative_prompt": "illustraiton, cartoon, blurry, text, not cinematic",
                     "image_size": {
-                        "height": 576,
-                        "width": 1024,
+                        "height": 512,
+                        "width": 512,
                     },
                     "num_inference_steps": 30,
                 },
             )
             image_url = response["images"][0]["url"]
-        elif len(images) == 1:
-            image_url = images[0].url
-        else:
-            yield fp.PartialResponse(
-                text="Please provide a single image or supply a prompt."
+            attachment_upload_response = await self.post_message_attachment(
+                message_id=request.message_id,
+                download_url=image_url,
+                is_inline=True,
             )
-            return
-
-        yield fp.PartialResponse(text="Creating video...")
-        handle = await self.fal_client.submit(
-            "fal-ai/fast-svd-lcm",
-            {"image_url": image_url, "fps": 6},
-        )
-
-        header = f"![image]({image_url})"
-        async for progress in handle.iter_events(with_logs=True):
-            if isinstance(progress, fal_client.Queued):
-                yield fp.PartialResponse(
-                    text=f"{header}\nQueued... {progress.position}",
-                    is_replace_response=True,
-                )
-            elif isinstance(progress, fal_client.InProgress):
-                logs = [log["message"] for log in progress.logs]
-                text = f"{header}\n```" + "\n".join(logs)
-                yield fp.PartialResponse(text=text, is_replace_response=True)
-
-        data = await handle.get()
-        video_url = data["video"]["url"]
-
-        await self.post_message_attachment(
-            message_id=request.message_id,
-            download_url=video_url,
-        )
-        yield fp.PartialResponse(text=f"Video created!", is_replace_response=True)
-        yield fp.PartialResponse(text=prompt, is_replace_response=True)
+            yield fp.PartialResponse(
+                text=f"![image][{attachment_upload_response.inline_ref}]\n\n"
+            )
+        print("done!")
 
     async def get_settings(self, setting: fp.SettingsRequest) -> fp.SettingsResponse:
         return fp.SettingsResponse(
