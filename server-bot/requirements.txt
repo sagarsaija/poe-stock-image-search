@@ -19,3 +19,4 @@ sse-starlette==2.1.0
 starlette==0.37.2
 typing_extensions==4.11.0
 uvicorn==0.29.0
+requests

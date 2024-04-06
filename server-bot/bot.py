@@ -8,9 +8,14 @@ import fastapi_poe as fp
 import httpx
 from dataclasses import dataclass
 import time
+import requests
 
 POE_ACCESS_KEY = os.getenv("POE_ACCESS_KEY")
 FAL_KEY = os.getenv("FAL_KEY")
+PREXEL_KEY = os.getenv("PREXEL_KEY")
+
+COUNT_SEARCH = 3
+COUNT_CREATE = 3
 
 
 class VideoMaker(fp.PoeBot):
@@ -25,27 +30,33 @@ class VideoMaker(fp.PoeBot):
         message = request.query[-1]
         prompt = message.content
 
+        url = f'https://api.pexels.com/v1/search?query={prompt}&per_page={COUNT_SEARCH}'
+        headers = {
+            'Authorization': PREXEL_KEY
+        }
+
+        response = requests.get(url, headers=headers)
+        prexel_search_data = response.json()
+
+        image_links = []
+        for photo in prexel_search_data['photos']:
+            image_links.append(photo['src']['large'])
+
+
         yield fp.PartialResponse(text="Searching images\n")
-        for i in range(3):
-            yield fp.PartialResponse(text=".")
-            # todo: search in pexel
-            with open(f"static/sample{i+1}.jpeg", "rb") as f:
-                file_data = f.read()
+        for image_link in image_links:
             attachment_upload_response = await self.post_message_attachment(
                 message_id=request.message_id,
-                file_data=file_data,
-                filename=f"sample{i+1}.jpeg",
+                download_url=image_link,
                 is_inline=True,
             )
             yield fp.PartialResponse(
                 text=f"![sample][{attachment_upload_response.inline_ref}]\n\n"
             )
             time.sleep(0.3)
-        yield fp.PartialResponse(text="\n")
         
         yield fp.PartialResponse(text="Creating images\n")
         for i in range(3):
-            yield fp.PartialResponse(text=".")
             response = await self.fal_client.run(
                 "fal-ai/fast-sdxl",
                 arguments={
