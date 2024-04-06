@@ -1,9 +1,6 @@
 app = 'poe-stock-image-search'
 primary_region = 'lax'
 
-[build]
-  builder = 'paketobuildpacks/builder:base'
-
 [env]
   PORT = '8080'
 
