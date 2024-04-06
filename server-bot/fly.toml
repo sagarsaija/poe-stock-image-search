@@ -1,4 +1,4 @@
-app = 'poe-video-maker'
+app = 'poe-stock-image-search'
 primary_region = 'lax'
 
 [build]
