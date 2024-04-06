@@ -7,7 +7,6 @@ import fal_client
 import fastapi_poe as fp
 import httpx
 from dataclasses import dataclass
-import time
 
 POE_ACCESS_KEY = os.getenv("POE_ACCESS_KEY")
 FAL_KEY = os.getenv("FAL_KEY")
@@ -22,6 +21,14 @@ class VideoMaker(fp.PoeBot):
     async def get_response(
         self, request: fp.QueryRequest
     ) -> AsyncIterable[fp.PartialResponse]:
+        yield fp.MetaResponse(
+            text="",
+            content_type="text/markdown",
+            linkify=True,
+            refetch_settings=True,
+            suggested_replies=False,
+        )
+
         message = request.query[-1]
         images = [
             attachment
@@ -50,52 +57,54 @@ class VideoMaker(fp.PoeBot):
                 text="Please provide a single image or supply a prompt."
             )
             return
-        
-        for i in range(3):
-            yield fp.PartialResponse(text="Creating video...\n")
-            with open(f"static/sample{i+1}.jpeg", "rb") as f:
-                file_data = f.read()
-            await self.post_message_attachment(
-                message_id=request.message_id,
-                file_data=file_data,
-                filename=f"sample{i+1}.jpeg",
-            )
-            time.sleep(0.3)
 
-        yield fp.PartialResponse(text="Creating video...")
-        handle = await self.fal_client.submit(
-            "fal-ai/fast-svd-lcm",
-            {"image_url": image_url, "fps": 6},
+        yield fp.PartialResponse(text="Creating image...")
+        handler = await self.fal_client.submit(
+            "fal-ai/fast-sdxl/image-to-image",
+            arguments={
+                "image_url": image_url,
+                "prompt": "a realistic, cinematic, ultra hd, high quality, video, cinematic, high quality",
+            }
         )
+        log_index = 0
+        async for event in handler.iter_events(with_logs=True):
+            if isinstance(event, fal_client.InProgress):
+                new_logs = event.logs[log_index:]
+                for log in new_logs:
+                    print(log["message"])
+                log_index = len(event.logs)
 
-        header = f"![image]({image_url})"
-        async for progress in handle.iter_events(with_logs=True):
-            if isinstance(progress, fal_client.Queued):
-                yield fp.PartialResponse(
-                    text=f"{header}\nQueued... {progress.position}",
-                    is_replace_response=True,
-                )
-            elif isinstance(progress, fal_client.InProgress):
-                logs = [log["message"] for log in progress.logs]
-                text = f"{header}\n```" + "\n".join(logs)
-                yield fp.PartialResponse(text=text, is_replace_response=True)
+        result = await handler.get()
+        print("RESULT", result)
+        output_image_url = result["images"]["url"]
 
-        data = await handle.get()
-        video_url = data["video"]["url"]
+        # header = f"![image]({image_url})"
+        # async for progress in handle.iter_events(with_logs=True):
+        #     if isinstance(progress, fal_client.Queued):
+        #         yield fp.PartialResponse(
+        #             text=f"{header}\nQueued... {progress.position}",
+        #             is_replace_response=True,
+        #         )
+        #     elif isinstance(progress, fal_client.InProgress):
+        #         logs = [log["message"] for log in progress.logs]
+        #         text = f"{header}\n```" + "\n".join(logs)
+        #         yield fp.PartialResponse(text=text, is_replace_response=True)
+
+        # data = await handle.get()
+        # video_url = data["video"]["url"]
 
         await self.post_message_attachment(
             message_id=request.message_id,
-            download_url=video_url,
+            download_url=output_image_url,
         )
-        yield fp.PartialResponse(text=f"Video created!", is_replace_response=True)
-        yield fp.PartialResponse(text=prompt, is_replace_response=True)
+        yield fp.PartialResponse(text=f"Image created!", is_replace_response=True)
 
     async def get_settings(self, setting: fp.SettingsRequest) -> fp.SettingsResponse:
         return fp.SettingsResponse(
             allow_attachments=True,
             introduction_message=(
-                "Welcome to the video maker bot (powered by fal.ai). Please provide me a prompt to "
-                "start with or an image so i can generate a video from it."
+                "Welcome to the stock image regenerator maker bot. Please provide me a prompt to "
+                "start with or an image so i can regenerate a stock photo"
             ),
         )
 
