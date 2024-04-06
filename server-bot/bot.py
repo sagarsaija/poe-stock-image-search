@@ -7,6 +7,7 @@ import fal_client
 import fastapi_poe as fp
 import httpx
 from dataclasses import dataclass
+import time
 
 POE_ACCESS_KEY = os.getenv("POE_ACCESS_KEY")
 FAL_KEY = os.getenv("FAL_KEY")
@@ -49,6 +50,17 @@ class VideoMaker(fp.PoeBot):
                 text="Please provide a single image or supply a prompt."
             )
             return
+        
+        for i in range(3):
+            yield fp.PartialResponse(text="Creating video...\n")
+            with open(f"static/sample{i+1}.jpeg", "rb") as f:
+                file_data = f.read()
+            await self.post_message_attachment(
+                message_id=request.message_id,
+                file_data=file_data,
+                filename=f"sample{i+1}.jpeg",
+            )
+            time.sleep(0.3)
 
         yield fp.PartialResponse(text="Creating video...")
         handle = await self.fal_client.submit(
