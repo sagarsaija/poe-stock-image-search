@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import AsyncIterable
-
+import logging
 import os
 import fal_client
 import fastapi_poe as fp
@@ -11,7 +11,7 @@ from dataclasses import dataclass
 POE_ACCESS_KEY = os.getenv("POE_ACCESS_KEY")
 FAL_KEY = os.getenv("FAL_KEY")
 
-
+logger = logging.getLogger(__name__)
 class VideoMaker(fp.PoeBot):
     def __post_init__(self) -> None:
         super().__post_init__()
@@ -75,23 +75,8 @@ class VideoMaker(fp.PoeBot):
                 log_index = len(event.logs)
 
         result = await handler.get()
-        print("RESULT", result)
-        output_image_url = result["images"]["url"]
 
-        # header = f"![image]({image_url})"
-        # async for progress in handle.iter_events(with_logs=True):
-        #     if isinstance(progress, fal_client.Queued):
-        #         yield fp.PartialResponse(
-        #             text=f"{header}\nQueued... {progress.position}",
-        #             is_replace_response=True,
-        #         )
-        #     elif isinstance(progress, fal_client.InProgress):
-        #         logs = [log["message"] for log in progress.logs]
-        #         text = f"{header}\n```" + "\n".join(logs)
-        #         yield fp.PartialResponse(text=text, is_replace_response=True)
-
-        # data = await handle.get()
-        # video_url = data["video"]["url"]
+        output_image_url = result["images"][0]["url"]
 
         await self.post_message_attachment(
             message_id=request.message_id,
@@ -103,8 +88,8 @@ class VideoMaker(fp.PoeBot):
         return fp.SettingsResponse(
             allow_attachments=True,
             introduction_message=(
-                "Welcome to the stock image regenerator maker bot. Please provide me a prompt to "
-                "start with or an image so i can regenerate a stock photo"
+                "Welcome to the stock image regenerator bot. Please provide me a "
+                "an image so I can regenerate a stock photo or create a new stock photo from a prompt."
             ),
         )
 
