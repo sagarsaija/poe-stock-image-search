@@ -10,7 +10,7 @@ from dataclasses import dataclass
 import time
 import requests
 
-POE_ACCESS_KEY = os.getenv("POE_ACCESS_KEY")
+STOCK_IMAGE_ACCESS_KEY = os.getenv("STOCK_IMAGE_POE_ACCESS_KEY")
 FAL_KEY = os.getenv("FAL_KEY")
 PREXEL_KEY = os.getenv("PREXEL_KEY")
 
@@ -18,7 +18,9 @@ COUNT_SEARCH = 3
 COUNT_CREATE = 3
 
 
-class VideoMaker(fp.PoeBot):
+class StockImage(fp.PoeBot):
+
+
     def __post_init__(self) -> None:
         super().__post_init__()
         self.fal_client = fal_client.AsyncClient(key=FAL_KEY)
@@ -90,8 +92,13 @@ class VideoMaker(fp.PoeBot):
         )
 
 
-bot = VideoMaker()
-app = fp.make_app(bot, POE_ACCESS_KEY)
+app = fp.make_app([
+    StockImage(
+        path = "/stock-image",
+        access_key = STOCK_IMAGE_ACCESS_KEY,
+    ),
+])
+
 
 if __name__ == "__main__":
     import uvicorn
