@@ -41,7 +41,7 @@ class VideoMaker(fp.PoeBot):
                 "fal-ai/fast-sdxl",
                 arguments={
                     "prompt": f"a realistic {prompt}, cinematic, ultra hd, high quality, video, cinematic, high quality",
-                    "negative_prompt": "illustraiton, cartoon, blurry, text, not cinematic",
+                    "negative_prompt": "illustration, cartoon, blurry, text, not cinematic",
                     "image_size": {
                         "height": 576,
                         "width": 1024,
@@ -58,12 +58,12 @@ class VideoMaker(fp.PoeBot):
             )
             return
 
-        yield fp.PartialResponse(text="Creating image...")
         handler = await self.fal_client.submit(
             "fal-ai/fast-sdxl/image-to-image",
             arguments={
                 "image_url": image_url,
-                "prompt": "a realistic, cinematic, ultra hd, high quality, video, cinematic, high quality",
+                "prompt": "a realistic, cinematic, ultra hd, high quality, stock photo, cinematic, high quality",
+                "negative_prompt": "illustration, cartoon, blurry, text, not cinematic",
             }
         )
         log_index = 0
@@ -78,18 +78,22 @@ class VideoMaker(fp.PoeBot):
 
         output_image_url = result["images"][0]["url"]
 
-        await self.post_message_attachment(
+        attachment_output_response = await self.post_message_attachment(
             message_id=request.message_id,
             download_url=output_image_url,
+            is_inline=True,
         )
-        yield fp.PartialResponse(text=f"Image created!", is_replace_response=True)
+
+        yield fp.PartialResponse(
+            text=f"![image][{attachment_output_response.inline_ref}]\n\n"
+        )
 
     async def get_settings(self, setting: fp.SettingsRequest) -> fp.SettingsResponse:
         return fp.SettingsResponse(
             allow_attachments=True,
             introduction_message=(
-                "Welcome to the stock image regenerator bot. Please provide me a "
-                "an image so I can regenerate a stock photo or create a new stock photo from a prompt."
+                "Welcome to the photo regenerator bot. Please provide me an "
+                "image so I can regenerate a photo or create a new stock photo from a prompt."
             ),
         )
 
