@@ -10,14 +10,16 @@ from dataclasses import dataclass
 import time
 import requests
 
+import reel
+
 STOCK_IMAGE_ACCESS_KEY = os.getenv("STOCK_IMAGE_POE_ACCESS_KEY")
 FAL_KEY = os.getenv("FAL_KEY")
 PREXEL_KEY = os.getenv("PREXEL_KEY")
 PEXEL_IMAGE_SEARCH_ACCESS_KEY = os.getenv("PEXEL_IMAGE_SEARCH_POE_ACCESS_KEY")
+REEL_ACCESS_KEY = os.getenv("REEL_POE_ACCESS_KEY")
 
 COUNT_SEARCH = 3
 COUNT_CREATE = 3
-
 
 class StockImage(fp.PoeBot):
 
@@ -173,7 +175,11 @@ app = fp.make_app([
     FreeImageSearcher(
         path = "/free-image-search",
         access_key=PEXEL_IMAGE_SEARCH_ACCESS_KEY,
-    )
+    ),
+    reel.Reel(
+        path="/reel",
+        access_key=REEL_ACCESS_KEY,
+    ),
 ])
 
 
