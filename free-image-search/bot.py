@@ -7,76 +7,72 @@ import fal_client
 import fastapi_poe as fp
 import httpx
 from dataclasses import dataclass
+import requests
 
-POE_ACCESS_KEY = os.getenv("POE_ACCESS_KEY")
-FAL_KEY = os.getenv("FAL_KEY")
+PEXEL_IMAGE_SEARCH_ACCESS_KEY = os.getenv("PEXEL_IMAGE_SEARCH_POE_ACCESS_KEY")
+PREXEL_KEY = os.getenv("PREXEL_KEY")
 
 
-class VideoMaker(fp.PoeBot):
+def search_pexels_images(query, per_page=15, api_key=PREXEL_KEY):
+    url = f'https://api.pexels.com/v1/search?query={query}&per_page={per_page}'
+    headers = {
+        'Authorization': api_key
+    }
+
+    response = requests.get(url, headers=headers)
+    data = response.json()
+
+    image_links = []
+    for photo in data['photos']:
+        image_links.append(photo['src']['large'])
+
+    return image_links
+
+
+class FreeImageSearcher(fp.PoeBot):
     def __post_init__(self) -> None:
         super().__post_init__()
-        self.fal_client = fal_client.AsyncClient(key=FAL_KEY)
+        # self.fal_client = fal_client.AsyncClient(key=FAL_KEY)
         self.http_client = httpx.AsyncClient()
 
     async def get_response(
         self, request: fp.QueryRequest
     ) -> AsyncIterable[fp.PartialResponse]:
         message = request.query[-1]
-        images = [
-            attachment
-            for attachment in message.attachments
-            if attachment.content_type.startswith("image/")
-        ]
-        if not images:
-            prompt = message.content
-            response = await self.fal_client.run(
-                "fal-ai/fast-sdxl",
-                arguments={
-                    "prompt": f"a realistic {prompt}, cinematic, ultra hd, high quality, video, cinematic, high quality",
-                    "negative_prompt": "illustraiton, cartoon, blurry, text, not cinematic",
-                    "image_size": {
-                        "height": 576,
-                        "width": 1024,
-                    },
-                    "num_inference_steps": 30,
-                },
+
+        yield fp.PartialResponse(text=f"Searching pexels for {message.content}...")
+
+        photo_links = search_pexels_images(message.content)
+
+        yield fp.PartialResponse(text=f"Found {len(photo_links)} photos. Here are the first 5: {photo_links[:5]}")
+
+    async def download_images(self, image_links):
+        for i, link in enumerate(image_links):
+            async with self.http_client.stream("GET", link) as response:
+                with open(f"/tmp/image_{i}.jpg", "wb") as f:
+                    async for chunk in response.aiter_bytes():
+                        f.write(chunk)
+
+    async def get_response(
+        self, request: fp.QueryRequest
+    ) -> AsyncIterable[fp.PartialResponse]:
+        message = request.query[-1]
+
+        yield fp.PartialResponse(text=f"Searching pexels for {message.content}...")
+
+        photo_links = search_pexels_images(message.content)
+
+        yield fp.PartialResponse(text=f"Found {len(photo_links)} photos. Downloading images...")
+
+        for photo_link in photo_links:
+            attachment_upload_response = await self.post_message_attachment(
+                message_id=request.message_id,
+                download_url=photo_link,
+                is_inline=True,
             )
-            image_url = response["images"][0]["url"]
-        elif len(images) == 1:
-            image_url = images[0].url
-        else:
             yield fp.PartialResponse(
-                text="Please provide a single image or supply a prompt."
+                text=f"![image][{attachment_upload_response.inline_ref}]\n\n"
             )
-            return
-
-        yield fp.PartialResponse(text="Creating video...")
-        handle = await self.fal_client.submit(
-            "fal-ai/fast-svd-lcm",
-            {"image_url": image_url, "fps": 6},
-        )
-
-        header = f"![image]({image_url})"
-        async for progress in handle.iter_events(with_logs=True):
-            if isinstance(progress, fal_client.Queued):
-                yield fp.PartialResponse(
-                    text=f"{header}\nQueued... {progress.position}",
-                    is_replace_response=True,
-                )
-            elif isinstance(progress, fal_client.InProgress):
-                logs = [log["message"] for log in progress.logs]
-                text = f"{header}\n```" + "\n".join(logs)
-                yield fp.PartialResponse(text=text, is_replace_response=True)
-
-        data = await handle.get()
-        video_url = data["video"]["url"]
-
-        await self.post_message_attachment(
-            message_id=request.message_id,
-            download_url=video_url,
-        )
-        yield fp.PartialResponse(text=f"Video created!", is_replace_response=True)
-        yield fp.PartialResponse(text=prompt, is_replace_response=True)
 
     async def get_settings(self, setting: fp.SettingsRequest) -> fp.SettingsResponse:
         return fp.SettingsResponse(
@@ -88,8 +84,8 @@ class VideoMaker(fp.PoeBot):
         )
 
 
-bot = VideoMaker()
-app = fp.make_app(bot, POE_ACCESS_KEY)
+bot = FreeImageSearcher()
+app = fp.make_app(bot, PEXEL_IMAGE_SEARCH_ACCESS_KEY)
 
 if __name__ == "__main__":
     import uvicorn
