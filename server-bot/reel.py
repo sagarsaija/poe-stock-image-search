@@ -101,7 +101,7 @@ def create_video_from_images(image_files, captions, output_file):
 
 
 def summarize_prompt(long_prompt: str):
-    client = OpenAI(OPENAI_API_KEY)
+    client = OpenAI(api_key=OPENAI_API_KEY)
     prompt = f"""
     Given a the following user-inputted prompt I need a short 30-40 word descriptive prompt for a video generation system. Make sure it is evocative and descriptive, stay away from adjectives that won't translate well visually.
     
