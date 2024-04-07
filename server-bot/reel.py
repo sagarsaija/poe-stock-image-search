@@ -166,5 +166,5 @@ class Reel(fp.PoeBot):
             filename="output.mp4",
             # is_inline=True,
         )
-        yield fp.PartialResponse(text=f"![video][{video_upload_response.inline_ref}]\n\n", is_replace_response=True)
+        # yield fp.PartialResponse(text=f"![video][{video_upload_response.inline_ref or ""}]\n\n", is_replace_response=True)
 

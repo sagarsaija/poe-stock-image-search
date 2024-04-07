@@ -13,6 +13,6 @@ primary_region = 'lax'
   processes = ['app']
 
 [[vm]]
-  memory = '4gb'
+  memory = '6gb'
   cpu_kind = 'shared'
-  cpus = 1
+  cpus = 2
