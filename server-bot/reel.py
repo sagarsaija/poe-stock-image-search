@@ -158,6 +158,7 @@ class Reel(fp.PoeBot):
             with open(f"scene_{i}.jpg", "wb") as file:
                 file.write(image_data)
             print(f"Downloaded scene_{i}.jpg")
+            time.sleep(0.3)
 
         create_video_from_images([f"scene_{i}.jpg" for i in range(len(scenes))], scenes, "output.mp4")
         with open("output.mp4", "rb") as file:
