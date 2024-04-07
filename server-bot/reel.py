@@ -149,7 +149,7 @@ class Reel(fp.PoeBot):
                 message_id=request.message_id,
                 download_url=image_url,
             )
-            yield fp.PartialResponse(text=f".")
+            yield fp.PartialResponse(text=f"![scene][{attachment_upload_response.inline_ref}]\n")
             sub_resopnse = requests.get(image_url)
             if sub_resopnse.status_code != 200:
                 continue
@@ -167,5 +167,6 @@ class Reel(fp.PoeBot):
             filename="output.mp4",
             # is_inline=True,
         )
+        yield fp.PartialResponse(text=f"Video Created!\n\n")
         # yield fp.PartialResponse(text=f"![video][{video_upload_response.inline_ref or ""}]\n\n", is_replace_response=True)
 
