@@ -13,6 +13,6 @@ primary_region = 'lax'
   processes = ['app']
 
 [[vm]]
-  memory = '8gb'
-  cpu_kind = 'performance-4x'
-  cpus = 4
+  memory = '16gb'
+  cpu_kind = 'performance'
+  cpus = 8
