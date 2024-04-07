@@ -1,4 +1,5 @@
 from __future__ import annotations
+from openai import OpenAI
 from moviepy.editor import VideoFileClip, TextClip, CompositeVideoClip, ImageClip, concatenate_videoclips
 
 from typing import AsyncIterable
@@ -15,7 +16,8 @@ import random
 import textwrap
 
 
-POE_INFERENCE_API_KEY = os.getenv("POE_INFERENCE_API_KEY")
+# POE_INFERENCE_API_KEY = os.getenv("POE_INFERENCE_API_KEY")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
 def wrap_text(text, max_width):
@@ -98,7 +100,8 @@ def create_video_from_images(image_files, captions, output_file):
     video.write_videofile(output_file, fps=24)
 
 
-async def summarize_prompt(long_prompt: str):
+def summarize_prompt(long_prompt: str):
+    client = OpenAI(OPENAI_API_KEY)
     prompt = f"""
     Given a the following user-inputted prompt I need a short 30-40 word descriptive prompt for a video generation system. Make sure it is evocative and descriptive, stay away from adjectives that won't translate well visually.
     
@@ -118,15 +121,13 @@ async def summarize_prompt(long_prompt: str):
         {"role": "user", "content": prompt}
     ]
     response = ""
-    async for partial in fp.get_bot_response(
+    chat_completion = client.chat.completions.create(
         messages=messages,
-        bot_name="GPT-3.5-Turbo",
-        api_key=POE_INFERENCE_API_KEY
-    ):
-        response += partial
+        model="gpt-3.5-turbo",
+    )
+    answer = chat_completion.choices[0].message.content.strip()
 
-    # Use the complete response here
-    return response.strip()
+    return answer
 
 
 class Reel(fp.PoeBot):
@@ -144,7 +145,7 @@ class Reel(fp.PoeBot):
 
         if len(prompt) > 200:
             yield fp.PartialResponse(text=f"Content too long, summarizing...\n")
-            short_prompt = await summarize_prompt(prompt)
+            short_prompt = summarize_prompt(prompt)
             yield fp.PartialResponse(text=f"{short_prompt}\n")
             prompt = short_prompt
 
