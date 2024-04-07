@@ -117,12 +117,16 @@ async def summarize_prompt(long_prompt: str):
     messages = [
         {"role": "user", "content": prompt}
     ]
-    response = await fp.get_bot_response(
+    response = ""
+    async for partial in fp.get_bot_response(
         messages=messages,
         bot_name="GPT-3.5-Turbo",
         api_key=POE_INFERENCE_API_KEY
-    )
-    return response.text.strip()
+    ):
+        response += partial
+
+    # Use the complete response here
+    return response.strip()
 
 
 class Reel(fp.PoeBot):
