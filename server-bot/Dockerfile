@@ -23,7 +23,7 @@ RUN pip install -r requirements.txt
 
 # Specify the command to run your application
 # This should be adjusted to how you run your Python application
-CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "bot:app"]
+CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "bot:app", "--timeout", "3600", "--workers", "2"]
 
 # Expose the port your app runs on
 EXPOSE 8000
