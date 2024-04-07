@@ -56,7 +56,8 @@ def add_subtitle(clip, caption, font_size=70, padding_percentage=10):
 
     # Create a text clip with the wrapped text
     txt_clip = TextClip(wrapped_caption, fontsize=font_size, color='white', font="Arial-Bold",
-                        align='center', method='caption', size=(clip.size[0]*0.9,None))
+                        align='center', method='caption', size=(clip.size[0]*0.9,None),
+                        stroke_width=1, stroke_color='black')
 
     # Position the text in the center at the bottom of the screen
     txt_clip = txt_clip.set_position(('center', 0.85), relative=True).set_duration(clip.duration)
