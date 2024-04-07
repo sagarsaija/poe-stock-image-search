@@ -148,6 +148,7 @@ class Reel(fp.PoeBot):
             attachment_upload_response = await self.post_message_attachment(
                 message_id=request.message_id,
                 download_url=image_url,
+                is_inline=True,
             )
             yield fp.PartialResponse(text=f"![scene][{attachment_upload_response.inline_ref}]\n")
             sub_resopnse = requests.get(image_url)
