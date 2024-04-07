@@ -59,7 +59,8 @@ def add_subtitle(clip, caption, font_size=70, padding_percentage=10):
 
     # Create a text clip with the wrapped text
     txt_clip = TextClip(wrapped_caption, fontsize=font_size, color='white', font="Arial-Bold",
-                        align='center', method='caption', size=(clip.size[0]*0.9, None))
+                        align='center', method='caption', size=(clip.size[0]*0.9, None),
+                        stroke_width=2, stroke_color='blue')
 
     # Position the text in the center at the bottom of the screen
     txt_clip = txt_clip.set_position(
@@ -186,8 +187,9 @@ class Reel(fp.PoeBot):
             attachment_upload_response = await self.post_message_attachment(
                 message_id=request.message_id,
                 download_url=image_url,
+                is_inline=True,
             )
-            yield fp.PartialResponse(text=f".")
+            yield fp.PartialResponse(text=f"![scene][{attachment_upload_response.inline_ref}]\n")
             sub_resopnse = requests.get(image_url)
             if sub_resopnse.status_code != 200:
                 continue
@@ -195,6 +197,7 @@ class Reel(fp.PoeBot):
             with open(f"scene_{i}.jpg", "wb") as file:
                 file.write(image_data)
             print(f"Downloaded scene_{i}.jpg")
+            time.sleep(0.3)
 
         create_video_from_images(
             [f"scene_{i}.jpg" for i in range(len(scenes))], scenes, "output.mp4")
@@ -206,4 +209,5 @@ class Reel(fp.PoeBot):
             filename="output.mp4",
             # is_inline=True,
         )
+        yield fp.PartialResponse(text=f"Video Created!\n\n")
         # yield fp.PartialResponse(text=f"![video][{video_upload_response.inline_ref or ""}]\n\n", is_replace_response=True)
