@@ -169,7 +169,7 @@ class Reel(fp.PoeBot):
         coros = []
         for scene in scenes:
             scene_description = " ".join(scene)
-            scene_prompt = f"{scene_description} in {style} style, describing {consistence_words}"
+            scene_prompt = f"{scene_description} in {style} style, colorful, describing {consistence_words}"
             print(f"Asking for scene: {scene_prompt}")
 
             coro = self.fal_client.run(
