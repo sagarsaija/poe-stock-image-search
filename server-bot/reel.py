@@ -169,7 +169,7 @@ class Reel(fp.PoeBot):
         coros = []
         for scene in scenes:
             scene_description = " ".join(scene)
-            scene_prompt = f"{scene_description} in {style} style, colorful, describing {consistence_words}"
+            scene_prompt = f"{scene_description} in {style} style, describing {consistence_words}"
             print(f"Asking for scene: {scene_prompt}")
 
             coro = self.fal_client.run(
@@ -205,14 +205,16 @@ class Reel(fp.PoeBot):
             print(f"Downloaded scene_{i}.jpg")
             time.sleep(0.3)
 
+        timestamped_filename = f"output_{int(time.time())}.mp4"
+
         create_video_from_images(
-            [f"scene_{i}.jpg" for i in range(len(scenes))], scenes, "output.mp4")
-        with open("output.mp4", "rb") as file:
+            [f"scene_{i}.jpg" for i in range(len(scenes))], scenes, timestamped_filename)
+        with open(timestamped_filename, "rb") as file:
             file_data = file.read()
         video_upload_response = await self.post_message_attachment(
             message_id=request.message_id,
             file_data=file_data,
-            filename="output.mp4",
+            filename=timestamped_filename,
             # is_inline=True,
         )
         yield fp.PartialResponse(text=f"Video Created!\n\n")
