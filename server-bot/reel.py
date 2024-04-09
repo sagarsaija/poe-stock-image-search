@@ -104,17 +104,17 @@ def summarize_prompt(long_prompt: str):
     client = OpenAI(api_key=OPENAI_API_KEY)
     prompt = f"""
     Given a the following user-inputted prompt I need a short 30-40 word descriptive prompt for a video generation system. Make sure it is evocative and descriptive, stay away from adjectives that won't translate well visually.
-    
+
     Examples of desired output:
     Example 1:
     "'Harry Potter' is a fantasy series about a young wizard, Harry Potter, who battles the dark wizard Voldemort, with themes of friendship, bravery, and good versus evil."
 
-    Example 2:    
+    Example 2:
     "Three of the world's South Asian hackers build a video generation app at a hackathon and the AGI comes alive. It looks like a rainbow kraken. It eats San Francisco."
-    
+
     User Input:
     {long_prompt}
-    
+
     Generated Short Prompt:
     """
     messages = [
@@ -171,16 +171,17 @@ class Reel(fp.PoeBot):
             scene_description = " ".join(scene)
             scene_prompt = f"{scene_description} in {style} style, describing {consistence_words}"
             print(f"Asking for scene: {scene_prompt}")
+
             coro = self.fal_client.run(
                 "fal-ai/fast-sdxl",
                 arguments={
                     "prompt": scene_prompt,
-                    "negative_prompt": "blurry, text",
+                    "negative_prompt": "lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, text",
                     "image_size": {
                         "height": 1920,
                         "width": 1080,
                     },
-                    "num_inference_steps": 30,
+                    "num_inference_steps": 50,
                 },
             )
             coros.append(coro)
