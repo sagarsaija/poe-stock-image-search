@@ -189,6 +189,7 @@ app = fp.make_app([
 
 @app.post("/test")
 async def test(job: reel.VideoJob):
+    print(f"Received job: {job}")
     reel.run_job(job)
 
 
