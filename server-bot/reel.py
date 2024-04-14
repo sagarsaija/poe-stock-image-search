@@ -176,7 +176,7 @@ class Reel(fp.PoeBot):
                 "fal-ai/fast-sdxl",
                 arguments={
                     "prompt": scene_prompt,
-                    "negative_prompt": "lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, text",
+                    "negative_prompt": "lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, text, black and white",
                     "image_size": {
                         "height": 1920,
                         "width": 1080,
