@@ -209,9 +209,10 @@ MACHINE_CONFIG = {
 
 @app.get("/test")
 async def test():
+    print(f"FLY_API_TOKEN: {FLY_API_TOKEN[:3]}...{FLY_API_TOKEN[-3:]}")
     machine_config = dict(**MACHINE_CONFIG)
     machine_config["name"] = "test-image"
-
+    print(f"requesting to create a machine")
     response = requests.post(f"https://api.machines.dev/v1/apps/{FLY_TASKS_APP}/machines", headers=headers, json=machine_config)
     response.raise_for_status()
     # store the machine id so we can use it later to check if the job has completed
