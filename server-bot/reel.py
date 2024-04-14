@@ -216,6 +216,13 @@ def summarize_prompt(long_prompt: str):
     return answer
 
 
+def create_narration_fragments(narration: str):
+    words = narration.split()
+    frame_narrations = [' '.join(words[i:i+4])
+                        for i in range(0, len(words), 4)]
+    return frame_narrations
+
+
 class Reel(fp.PoeBot):
 
     def __post_init__(self) -> None:
@@ -248,16 +255,14 @@ class Reel(fp.PoeBot):
         all_scene_descriptions = []
         for scene in story_video.scenes:
             scene_prompt = f"{scene.scene_description} in {style} style, describing {story_video.style_consistency}"
-            words = scene.narration.split()
-            frame_narrations = [
-                words[i:i+4].join(" ") for i in range(0, len(words), 4)]
-            # yield fp.PartialResponse(text=f"Scene:\n{frame_narrations}\n")
+            frame_narrations = create_narration_fragments(scene.narration)
             all_scene_narrations.extend(frame_narrations)
             for _ in frame_narrations:
                 all_scene_descriptions.append(scene_prompt)
 
         for narration, description in zip(all_scene_narrations, all_scene_descriptions):
             yield fp.PartialResponse(text=f"Frame Narration: {narration}, Frame Description: {description}\n")
+
         # words = guideline.split()
 
         # # create upto 4 words per scene
