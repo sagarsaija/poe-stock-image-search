@@ -182,9 +182,44 @@ app = fp.make_app([
     ),
 ])
 
+FLY_TASKS_APP = "poe-video-process"
+FLY_API_TOKEN = os.getenv("FLY_API_TOKEN")
+
+headers = {
+    "Authorization": f"Bearer {FLY_API_TOKEN}",
+    "Content-Type": "application/json"
+}
+
+WORKER_IMAGE = "registry.fly.io/poe-stock-image-search:latest"
+
+MACHINE_CONFIG = {
+    "config": {
+        "image": WORKER_IMAGE,
+        "env": {
+        },
+        "processes": [{
+            "name": "worker",
+            "entrypoint": ["python"],
+            "cmd": ["app/worker.py"]
+        }]
+    }
+}
+
 @app.get("/test")
 async def test():
-    return {"message": "Hello World!"}
+    machine_config = dict(**MACHINE_CONFIG)
+    machine_config["name"] = "test-image"
+
+    response = requests.post(f"https://api.machines.dev/v1/apps/{FLY_TASKS_APP}/machines", headers=headers, json=machine_config)
+    response.raise_for_status()
+    # store the machine id so we can use it later to check if the job has completed
+    response = response.json()
+    print(f"response: {response}")
+    machine_id = response["id"]
+    return {
+        "machine_id": machine_id,
+        # "task_id": task_id
+    }
 
 
 if __name__ == "__main__":
