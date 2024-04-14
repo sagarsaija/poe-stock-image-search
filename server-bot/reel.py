@@ -163,7 +163,7 @@ def create_script(guideline: str, style: str):
     
     Please generate a storyboard and script for the following prompt. Include narration and a scene description. Do not include character voices, just voiceover narration at this stage. Thank you.
     
-    The story is just 40 seconds so it's not a full-length movie. Do not create more than 2 scenes. The narration of each scene should not exceed 10 words.
+    The story is just 40 seconds so it's not a full-length movie. Do not create more than 3 scenes. The narration of each scene should not exceed 10 words.
         
     Story Inspiration:
     {guideline}
@@ -249,8 +249,9 @@ class Reel(fp.PoeBot):
         for scene in story_video.scenes:
             scene_prompt = f"{scene.scene_description} in {style} style, describing {story_video.style_consistency}"
             words = scene.narration.split()
-            frame_narrations = [words[i:i+4] for i in range(0, len(words), 4)]
-            yield fp.PartialResponse(text=f"Scene:\n{frame_narrations}\n")
+            frame_narrations = [
+                words[i:i+4].join(" ") for i in range(0, len(words), 4)]
+            # yield fp.PartialResponse(text=f"Scene:\n{frame_narrations}\n")
             all_scene_narrations.extend(frame_narrations)
             for _ in frame_narrations:
                 all_scene_prompts.append(scene_prompt)
