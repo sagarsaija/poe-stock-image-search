@@ -100,6 +100,34 @@ def create_video_from_images(image_files, captions, output_file):
     video.write_videofile(output_file, fps=24)
 
 
+
+def create_script(prompt: str):
+    client = OpenAI(api_key=OPENAI_API_KEY)
+    prompt = f"""
+    You're an expert AI video editor and you're tasked with generating a title and script for a short story to be shared on social media.
+    
+    Please generate a storyboard and script for the following prompt. Include narration and a scene description. Do not include character voices, just voiceover narration at this stage. Thank you.
+    
+    The story is just 40 seconds so it's not a full-length movie. Do not create more than 6 scenes.
+        
+    Story Inspiration:
+    {prompt}
+
+    """
+    messages = [
+        {   "role": "system", "content": "You are a video editor screenwriting and then storyboarding a short story video on YouTube Shorts / TikTok.",
+            "role": "user", "content": prompt}
+    ]
+
+    chat_completion = client.chat.completions.create(
+        messages=messages,
+        model="gpt-3.5-turbo",
+    )
+    answer = chat_completion.choices[0].message.content.strip()
+
+    return answer
+
+
 def summarize_prompt(long_prompt: str):
     client = OpenAI(api_key=OPENAI_API_KEY)
     prompt = f"""
@@ -148,6 +176,10 @@ class Reel(fp.PoeBot):
             short_prompt = summarize_prompt(prompt)
             yield fp.PartialResponse(text=f"{short_prompt}\n")
             prompt = short_prompt
+            
+        yield fp.PartialResponse(text=f"Creating script...\n")
+        script = create_script(prompt)
+        yield fp.PartialResponse(text=f"{script}\n")
 
         words = prompt.split()
 
