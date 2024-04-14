@@ -267,8 +267,8 @@ class Reel(fp.PoeBot):
                 all_frame_narrations.append(narration)
                 all_frame_descriptions.append(scene_prompt)
 
-        for narration, description in zip(all_frame_narrations, all_frame_descriptions):
-            yield fp.PartialResponse(text=f"Frame Narration: {narration}, Frame Description: {description}\n")
+        # for narration, description in zip(all_frame_narrations, all_frame_descriptions):
+        #     yield fp.PartialResponse(text=f"Frame Narration: {narration}, Frame Description: {description}\n")
 
         image_jobs = []
         for image_description in all_frame_descriptions:
