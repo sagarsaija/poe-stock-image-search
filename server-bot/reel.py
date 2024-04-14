@@ -100,7 +100,6 @@ def create_video_from_images(image_files, captions, output_file):
     video.write_videofile(output_file, fps=24)
 
 
-
 def create_script(prompt: str):
     client = OpenAI(api_key=OPENAI_API_KEY)
     prompt = f"""
@@ -115,7 +114,7 @@ def create_script(prompt: str):
 
     """
     messages = [
-        {   "role": "system", "content": "You are a video editor screenwriting and then storyboarding a short story video on YouTube Shorts / TikTok.",
+        {"role": "system", "content": "You are a video editor screenwriting and then storyboarding a short story video on YouTube Shorts / TikTok.",
             "role": "user", "content": prompt}
     ]
 
@@ -169,19 +168,20 @@ class Reel(fp.PoeBot):
         self, request: fp.QueryRequest
     ) -> AsyncIterable[fp.PartialResponse]:
         message = request.query[-1]
-        prompt = message.content.strip()
+        user_input = message.content.strip()
 
-        if len(prompt) > 200:
-            yield fp.PartialResponse(text=f"Content too long, summarizing...\n")
-            short_prompt = summarize_prompt(prompt)
-            yield fp.PartialResponse(text=f"{short_prompt}\n")
-            prompt = short_prompt
-            
+        # if len(prompt) > 200:
+        yield fp.PartialResponse(text=f"Translating user_input to visual story guideline...\n")
+        guideline = summarize_prompt(user_input)
+        yield fp.PartialResponse(text=f"{guideline}\n")
+
         yield fp.PartialResponse(text=f"Creating script...\n")
-        script = create_script(prompt)
+        script = create_script(guideline)
         yield fp.PartialResponse(text=f"{script}\n")
+        
+        # yield fp.PartialResponse(text=f"Extracting scenes...\n")
 
-        words = prompt.split()
+        words = guideline.split()
 
         # create upto 4 words per scene
         scenes = [words[i:i+4] for i in range(0, len(words), 4)]
