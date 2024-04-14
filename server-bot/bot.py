@@ -10,6 +10,7 @@ from dataclasses import dataclass
 import time
 import requests
 import logging
+import uuid
 
 import reel
 
@@ -185,54 +186,10 @@ app = fp.make_app([
     ),
 ])
 
-FLY_TASKS_APP = "poe-stock-image-search"
-FLY_API_TOKEN = os.getenv("FLY_API_TOKEN")
-
-print(f"FLY_API_TOKEN: {FLY_API_TOKEN[:3]}...{FLY_API_TOKEN[-3:]}")
-
-headers = {
-    "Authorization": f"Bearer {FLY_API_TOKEN}",
-    "Content-Type": "application/json"
-}
-
-WORKER_IMAGE = "registry.fly.io/poe-stock-image-search:latest"
-
-MACHINE_CONFIG = {
-    "config": {
-        "image": WORKER_IMAGE,
-        "env": {
-        },
-        "processes": [{
-            "name": "worker",
-            "entrypoint": ["python"],
-            "cmd": ["app/worker.py"]
-        }]
-    }
-}
-
 @app.get("/test")
 async def test():
-    print(f"printing: FLY_API_TOKEN: {FLY_API_TOKEN[:3]}...{FLY_API_TOKEN[-3:]}")
-    logger.error(f"logging: FLY_API_TOKEN: {FLY_API_TOKEN[:3]}...{FLY_API_TOKEN[-3:]}")
-    machine_config = dict(**MACHINE_CONFIG)
-    machine_config["name"] = "test-image"
-    print(f"requesting to create a machine")
-    response = requests.post(f"https://api.machines.dev/v1/apps/{FLY_TASKS_APP}/machines", headers=headers, json=machine_config)
-    logger.info(f"response: {response}")
-    if response.status_code != 200:
-        logger.info(f"{response.text=}")
-        return {
-            "error": response.json()
-        }
-    response.raise_for_status()
-    # store the machine id so we can use it later to check if the job has completed
-    response = response.json()
-    print(f"response: {response}")
-    machine_id = response["id"]
-    return {
-        "machine_id": machine_id,
-        # "task_id": task_id
-    }
+    reel.run_job()
+
 
 
 if __name__ == "__main__":
