@@ -245,7 +245,7 @@ class Reel(fp.PoeBot):
         yield fp.PartialResponse(text=f"Scenes:\n{story_video.model_dump_json(indent=2)}\n")
 
         all_scene_narrations = []
-        all_scene_prompts = []
+        all_scene_descriptions = []
         for scene in story_video.scenes:
             scene_prompt = f"{scene.scene_description} in {style} style, describing {story_video.style_consistency}"
             words = scene.narration.split()
@@ -254,10 +254,10 @@ class Reel(fp.PoeBot):
             # yield fp.PartialResponse(text=f"Scene:\n{frame_narrations}\n")
             all_scene_narrations.extend(frame_narrations)
             for _ in frame_narrations:
-                all_scene_prompts.append(scene_prompt)
+                all_scene_descriptions.append(scene_prompt)
 
-        for narration, prompt in zip(all_scene_narrations, all_scene_prompts):
-            yield fp.PartialResponse(text=f"Narration: {narration}, Prompt: {prompt}\n")
+        for narration, description in zip(all_scene_narrations, all_scene_descriptions):
+            yield fp.PartialResponse(text=f"Frame Narration: {narration}, Frame Description: {description}\n")
         # words = guideline.split()
 
         # # create upto 4 words per scene
