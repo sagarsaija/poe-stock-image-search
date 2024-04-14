@@ -336,7 +336,7 @@ def run_job(video_job: VideoJob):
         "Authorization": f"Bearer {FLY_API_TOKEN}",
         "Content-Type": "application/json"
     }
-    arg = json.dumps(video_job)
+    arg = video_job.model_dump_json()
     machine_config = {
         "name": f"video_job-{video_job.persistent_uuid}",
         "config": {
@@ -346,7 +346,7 @@ def run_job(video_job: VideoJob):
             "processes": [{
                 "name": "worker",
                 "entrypoint": ["python"],
-                "cmd": ["app/worker.py", arg]
+                "cmd": ["worker.py", arg]
             }]
         }
     }
