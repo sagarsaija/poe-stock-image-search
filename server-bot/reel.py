@@ -1,4 +1,7 @@
 from __future__ import annotations
+import instructor
+from typing import List
+from pydantic import BaseModel, Field
 from openai import OpenAI
 from moviepy.editor import VideoFileClip, TextClip, CompositeVideoClip, ImageClip, concatenate_videoclips
 
@@ -87,6 +90,56 @@ STYLES = [
 ]
 
 
+class Scene(BaseModel):
+    """The object representing a scene in the short story video"""
+    narration: str = Field(description="Narration or voiceover for the scene")
+    scene_description: str = Field(
+        description="Visual description of the scene for storyboard")
+
+
+class StoryVideo(BaseModel):
+    """The format of the story video."""
+    title: str = Field(description="Title of the short story")
+    scenes: List[Scene] = Field(
+        description="List of scenes in the short story")
+    style_consistency: str = Field(
+        description="Consistency of the style of the story")
+
+
+def generate_scenes_with_llm(script):
+    # Patch the OpenAI client
+    client = instructor.from_openai(OpenAI(api_key=OPENAI_API_KEY))
+
+    prompt = f"""
+Generate scenes for an event video based on the following script:
+
+Script:
+{script}
+
+Each scene should have a narration and scene_description if mentioned in the script.
+"""
+
+    story_video = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": SCRIPT_SYSTEM_PROMPT},
+            {"role": "user", "content": prompt},
+        ],
+        temperature=0,
+        response_model=StoryVideo
+    )
+
+    # @TODO Generate the title scene separately
+    # title_scene = Scene(narration=title)
+    # story_video.scenes.insert(0, title_scene)
+
+    # @TODO Generate the outro with logo / splash / link separately
+    # outro_scene = Scene(narration="Thank you for watching!")
+    # story_video.scenes.append(outro_scene)
+
+    return story_video
+
+
 def create_video_from_images(image_files, captions, output_file):
     clips = [ImageClip(file).set_duration(SECONDS_PER_SCENE)
              for file in image_files]
@@ -98,6 +151,9 @@ def create_video_from_images(image_files, captions, output_file):
     # clips with subtitles
     video = concatenate_videoclips(clips_with_caption, method="compose")
     video.write_videofile(output_file, fps=24)
+
+
+SCRIPT_SYSTEM_PROMPT = "You are a video editor screenwriting and then storyboarding a short story video on YouTube Shorts / TikTok."
 
 
 def create_script(guideline: str, style: str):
@@ -116,10 +172,10 @@ def create_script(guideline: str, style: str):
     {style}
 
     """
-    messages = [
-        {"role": "system", "content": "You are a video editor screenwriting and then storyboarding a short story video on YouTube Shorts / TikTok.",
-            "role": "user", "content": prompt}
-    ]
+    messages = [{
+        "role": "system", "content": SCRIPT_SYSTEM_PROMPT,
+        "role": "user", "content": prompt
+    }]
 
     chat_completion = client.chat.completions.create(
         messages=messages,
@@ -183,11 +239,13 @@ class Reel(fp.PoeBot):
         script_prompt, script = create_script(guideline, style)
         yield fp.PartialResponse(text=f"Script Prompt:\n{script_prompt}\n")
         yield fp.PartialResponse(text=f"Script:\n{script}\n")
-        
-        # yield fp.PartialResponse(text=f"Extracting scenes...\n")
+
+        yield fp.PartialResponse(text=f"Extracting scenes...\n")
+        scenes = generate_scenes_with_llm(script)
+        yield fp.PartialResponse(text=f"Scenes:\n{scenes.model_dump_json(indent=2)}\n")
 
         words = guideline.split()
-        
+
         # create upto 4 words per scene
         scenes = [words[i:i+4] for i in range(0, len(words), 4)]
 
@@ -195,7 +253,7 @@ class Reel(fp.PoeBot):
             yield fp.PartialResponse(text=f"Content too long, truncating to 30 scenes\n")
 
         scenes = scenes[:30]
-        
+
         consistence_words = []
         for scene in scenes:
             word = random.choice([x for x in scene if x.lower() not in [
