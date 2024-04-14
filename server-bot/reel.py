@@ -17,7 +17,10 @@ import requests
 import asyncio
 import random
 import textwrap
+import uuid
+import logging
 
+logger = logging.getLogger("uvicorn")
 
 # POE_INFERENCE_API_KEY = os.getenv("POE_INFERENCE_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -299,6 +302,14 @@ class Reel(fp.PoeBot):
                 file.write(image_data)
             print(f"Downloaded scene_{i}.jpg")
             time.sleep(0.3)
+        upload_id = str(uuid.uuid4())
+        job = VideoJob(
+            image_urls=image_urls,
+            words=all_frame_narrations,
+            persistent_uuid=upload_id
+        )
+        logger.info(f"Need to run job: {job}")
+        # run_job(job)
 
         timestamped_filename = f"output_{int(time.time())}.mp4"
 
@@ -314,3 +325,10 @@ class Reel(fp.PoeBot):
         )
         yield fp.PartialResponse(text=f"Video Created!\n\n")
         # yield fp.PartialResponse(text=f"![video][{video_upload_response.inline_ref or ''}]\n\n", is_replace_response=True)
+
+
+@dataclass
+class VideoJob:
+    image_urls: list[str]
+    words: list[str]
+    persistent_uuid: str
