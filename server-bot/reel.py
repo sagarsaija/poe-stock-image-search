@@ -100,7 +100,7 @@ def create_video_from_images(image_files, captions, output_file):
     video.write_videofile(output_file, fps=24)
 
 
-def create_script(prompt: str):
+def create_script(guideline: str, style: str):
     client = OpenAI(api_key=OPENAI_API_KEY)
     prompt = f"""
     You're an expert AI video editor and you're tasked with generating a title and script for a short story to be shared on social media.
@@ -110,7 +110,10 @@ def create_script(prompt: str):
     The story is just 40 seconds so it's not a full-length movie. Do not create more than 6 scenes.
         
     Story Inspiration:
-    {prompt}
+    {guideline}
+    
+    In the style of:
+    {style}
 
     """
     messages = [
@@ -175,14 +178,15 @@ class Reel(fp.PoeBot):
         guideline = summarize_prompt(user_input)
         yield fp.PartialResponse(text=f"{guideline}\n")
 
-        yield fp.PartialResponse(text=f"Creating script...\n")
-        script = create_script(guideline)
+        style = random.choice(STYLES)
+        yield fp.PartialResponse(text=f"Creating script in style {style}...\n")
+        script = create_script(guideline, style)
         yield fp.PartialResponse(text=f"{script}\n")
         
         # yield fp.PartialResponse(text=f"Extracting scenes...\n")
 
         words = guideline.split()
-
+        
         # create upto 4 words per scene
         scenes = [words[i:i+4] for i in range(0, len(words), 4)]
 
@@ -190,7 +194,7 @@ class Reel(fp.PoeBot):
             yield fp.PartialResponse(text=f"Content too long, truncating to 30 scenes\n")
 
         scenes = scenes[:30]
-        style = random.choice(STYLES)
+        
         consistence_words = []
         for scene in scenes:
             word = random.choice([x for x in scene if x.lower() not in [
