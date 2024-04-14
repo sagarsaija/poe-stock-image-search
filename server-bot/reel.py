@@ -263,72 +263,52 @@ class Reel(fp.PoeBot):
         for narration, description in zip(all_scene_narrations, all_scene_descriptions):
             yield fp.PartialResponse(text=f"Frame Narration: {narration}, Frame Description: {description}\n")
 
-        # words = guideline.split()
+        image_jobs = []
+        for scene_description in all_scene_descriptions:
+            image_job = self.fal_client.run(
+                "fal-ai/fast-sdxl",
+                arguments={
+                    "prompt": scene_description,
+                    "negative_prompt": "lowres, bad anatomy, hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, text, black and white",
+                    "image_size": {
+                        "height": 1920,
+                        "width": 1080,
+                    },
+                    "num_inference_steps": 50,
+                },
+            )
+            image_jobs.append(image_job)
 
-        # # create upto 4 words per scene
-        # scenes = [words[i:i+4] for i in range(0, len(words), 4)]
+        responses = await asyncio.gather(*image_jobs)
 
-        # if len(scenes) > 30:
-        #     yield fp.PartialResponse(text=f"Content too long, truncating to 30 scenes\n")
+        for i, response in enumerate(responses):
+            image_url = response["images"][0]["url"]
+            attachment_upload_response = await self.post_message_attachment(
+                message_id=request.message_id,
+                download_url=image_url,
+                is_inline=True,
+            )
+            yield fp.PartialResponse(text=f"![scene][{attachment_upload_response.inline_ref}]\n")
+            sub_response = requests.get(image_url)
+            if sub_response.status_code != 200:
+                continue
+            image_data = sub_response.content
+            with open(f"scene_{i}.jpg", "wb") as file:
+                file.write(image_data)
+            print(f"Downloaded scene_{i}.jpg")
+            time.sleep(0.3)
 
-        # scenes = scenes[:30]
+        timestamped_filename = f"output_{int(time.time())}.mp4"
 
-        # consistence_words = []
-        # for scene in scenes:
-        #     word = random.choice([x for x in scene if x.lower() not in [
-        #                          "is", "the", "a", "an", "are", "will", "shall"]])
-        #     consistence_words.append(word)
-        # consistence_words = " ".join(consistence_words)
-
-        # image_jobs = []
-        # for scene in story_video.scenes:
-        #     scene_prompt = f"{scene.scene_description} in {style} style, describing {story_video.style_consistency}"
-        #     yield fp.PartialResponse(text=f"Asking for scene: {scene_prompt}")
-
-        #     image_job = self.fal_client.run(
-        #         "fal-ai/fast-sdxl",
-        #         arguments={
-        #             "prompt": scene_prompt,
-        #             "negative_prompt": "lowres, bad anatomy, hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, text, black and white",
-        #             "image_size": {
-        #                 "height": 1920,
-        #                 "width": 1080,
-        #             },
-        #             "num_inference_steps": 50,
-        #         },
-        #     )
-        #     image_jobs.append(image_job)
-
-        # responses = await asyncio.gather(*image_jobs)
-
-        # for i, response in enumerate(responses):
-        #     image_url = response["images"][0]["url"]
-        #     attachment_upload_response = await self.post_message_attachment(
-        #         message_id=request.message_id,
-        #         download_url=image_url,
-        #         is_inline=True,
-        #     )
-        #     yield fp.PartialResponse(text=f"![scene][{attachment_upload_response.inline_ref}]\n")
-        #     sub_response = requests.get(image_url)
-        #     if sub_response.status_code != 200:
-        #         continue
-        #     image_data = sub_response.content
-        #     with open(f"scene_{i}.jpg", "wb") as file:
-        #         file.write(image_data)
-        #     print(f"Downloaded scene_{i}.jpg")
-        #     time.sleep(0.3)
-
-        # timestamped_filename = f"output_{int(time.time())}.mp4"
-
-        # create_video_from_images(
-        #     [f"scene_{i}.jpg" for i in range(len(scenes))], scenes, timestamped_filename)
-        # with open(timestamped_filename, "rb") as file:
-        #     file_data = file.read()
-        # video_upload_response = await self.post_message_attachment(
-        #     message_id=request.message_id,
-        #     file_data=file_data,
-        #     filename=timestamped_filename,
-        #     # is_inline=True,
-        # )
-        # yield fp.PartialResponse(text=f"Video Created!\n\n")
-        # yield fp.PartialResponse(text=f"![video][{video_upload_response.inline_ref or ""}]\n\n", is_replace_response=True)
+        create_video_from_images(
+            [f"scene_{i}.jpg" for i in range(len(scenes))], scenes, timestamped_filename)
+        with open(timestamped_filename, "rb") as file:
+            file_data = file.read()
+        video_upload_response = await self.post_message_attachment(
+            message_id=request.message_id,
+            file_data=file_data,
+            filename=timestamped_filename,
+            # is_inline=True,
+        )
+        yield fp.PartialResponse(text=f"Video Created!\n\n")
+        yield fp.PartialResponse(text=f"![video][{video_upload_response.inline_ref or ""}]\n\n", is_replace_response=True)
