@@ -346,7 +346,7 @@ def run_job(video_job: VideoJob):
             "processes": [{
                 "name": "worker",
                 "entrypoint": ["python"],
-                "cmd": ["app/worker.py", arg]
+                "cmd": ["worker.py", arg]
             }]
         }
     }
