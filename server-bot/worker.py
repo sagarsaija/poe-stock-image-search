@@ -1,3 +1,5 @@
+import logging
 
+logger = logging.getLogger("uvicorn")
 
-print("Hello World!")
+logger.info("Hello World!")
