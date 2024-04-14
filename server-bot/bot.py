@@ -9,6 +9,7 @@ import httpx
 from dataclasses import dataclass
 import time
 import requests
+import logging
 
 import reel
 
@@ -210,6 +211,7 @@ MACHINE_CONFIG = {
 @app.get("/test")
 async def test():
     print(f"FLY_API_TOKEN: {FLY_API_TOKEN[:3]}...{FLY_API_TOKEN[-3:]}")
+    logging.log(f"logging: FLY_API_TOKEN: {FLY_API_TOKEN[:3]}...{FLY_API_TOKEN[-3:]}")
     machine_config = dict(**MACHINE_CONFIG)
     machine_config["name"] = "test-image"
     print(f"requesting to create a machine")
