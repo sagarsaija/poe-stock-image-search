@@ -224,12 +224,11 @@ async def test():
         return {
             "error": response.json()
         }
-    # response.raise_for_status()
-    # # store the machine id so we can use it later to check if the job has completed
-    # response = response.json()
-    # print(f"response: {response}")
-    # machine_id = response["id"]
-    machine_id = "test"
+    response.raise_for_status()
+    # store the machine id so we can use it later to check if the job has completed
+    response = response.json()
+    print(f"response: {response}")
+    machine_id = response["id"]
     return {
         "machine_id": machine_id,
         # "task_id": task_id
