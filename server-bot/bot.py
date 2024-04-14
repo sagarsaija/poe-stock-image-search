@@ -182,7 +182,7 @@ app = fp.make_app([
     ),
 ])
 
-FLY_TASKS_APP = "poe-video-process"
+FLY_TASKS_APP = "poe-stock-image-search"
 FLY_API_TOKEN = os.getenv("FLY_API_TOKEN")
 
 headers = {
