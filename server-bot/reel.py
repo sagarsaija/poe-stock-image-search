@@ -127,7 +127,7 @@ def create_script(guideline: str, style: str):
     )
     answer = chat_completion.choices[0].message.content.strip()
 
-    return answer
+    return prompt, answer
 
 
 def summarize_prompt(long_prompt: str):
@@ -180,8 +180,9 @@ class Reel(fp.PoeBot):
 
         style = random.choice(STYLES)
         yield fp.PartialResponse(text=f"Creating script in style {style}...\n")
-        script = create_script(guideline, style)
-        yield fp.PartialResponse(text=f"{script}\n")
+        script_prompt, script = create_script(guideline, style)
+        yield fp.PartialResponse(text=f"Script Prompt:\n{script_prompt}\n")
+        yield fp.PartialResponse(text=f"Script:\n{script}\n")
         
         # yield fp.PartialResponse(text=f"Extracting scenes...\n")
 
