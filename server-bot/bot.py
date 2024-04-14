@@ -185,6 +185,8 @@ app = fp.make_app([
 FLY_TASKS_APP = "poe-stock-image-search"
 FLY_API_TOKEN = os.getenv("FLY_API_TOKEN")
 
+print(f"FLY_API_TOKEN: {FLY_API_TOKEN[:3]}...{FLY_API_TOKEN[-3:]}")
+
 headers = {
     "Authorization": f"Bearer {FLY_API_TOKEN}",
     "Content-Type": "application/json"
