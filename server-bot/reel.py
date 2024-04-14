@@ -243,7 +243,6 @@ class Reel(fp.PoeBot):
         message = request.query[-1]
         user_input = message.content.strip()
 
-        # if len(prompt) > 200:
         yield fp.PartialResponse(text=f"Translating user_input to visual story guideline...\n")
         guideline = summarize_prompt(user_input)
         yield fp.PartialResponse(text=f"{guideline}\n")
@@ -251,13 +250,14 @@ class Reel(fp.PoeBot):
         style = random.choice(STYLES)
         yield fp.PartialResponse(text=f"Creating script in style {style}...\n")
         script_prompt, script = create_script(guideline, style)
-        yield fp.PartialResponse(text=f"Script Prompt:\n{script_prompt}\n")
-        yield fp.PartialResponse(text=f"Script:\n{script}\n")
+        # yield fp.PartialResponse(text=f"Script Prompt:\n{script_prompt}\n")
+        # yield fp.PartialResponse(text=f"Script:\n{script}\n")
 
         yield fp.PartialResponse(text=f"Extracting scenes...\n")
         story_video = generate_scenes_with_llm(script)
-        yield fp.PartialResponse(text=f"Scenes:\n{story_video.model_dump_json(indent=2)}\n")
+        # yield fp.PartialResponse(text=f"Scenes:\n{story_video.model_dump_json(indent=2)}\n")
 
+        yield fp.PartialResponse(text=f"Generating key frame images...\n")
         all_frame_narrations = []
         all_frame_descriptions = []
         for scene in story_video.scenes:
@@ -327,7 +327,7 @@ class Reel(fp.PoeBot):
             filename=timestamped_filename,
             # is_inline=True,
         )
-        yield fp.PartialResponse(text=f"Video Created!\n\n")
+        yield fp.PartialResponse(text=f"Video Created!\n\n", is_replace_response=True)
         # yield fp.PartialResponse(text=f"![video][{video_upload_response.inline_ref or ''}]\n\n", is_replace_response=True)
 
 
