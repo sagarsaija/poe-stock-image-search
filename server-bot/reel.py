@@ -340,8 +340,14 @@ def run_job(video_job: VideoJob):
     machine_config = {
         "name": f"video_job-{video_job.persistent_uuid}",
         "config": {
+            "auto_destroy": True,
             "image": WORKER_IMAGE,
             "env": {
+            },
+            "guest": {
+                "cpu_kind": "performance",
+                "cpus": 8,
+                "memory_mb": 16384,
             },
             "processes": [{
                 "name": "worker",
