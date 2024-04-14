@@ -17,10 +17,17 @@ import requests
 import asyncio
 import random
 import textwrap
+import uuid
+import logging
+import json
 
+
+logger = logging.getLogger("uvicorn")
 
 # POE_INFERENCE_API_KEY = os.getenv("POE_INFERENCE_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+FLY_TASKS_APP = "poe-stock-image-search"
+FLY_API_TOKEN = os.getenv("FLY_API_TOKEN")
 
 
 def wrap_text(text, max_width):
@@ -299,6 +306,14 @@ class Reel(fp.PoeBot):
                 file.write(image_data)
             print(f"Downloaded scene_{i}.jpg")
             time.sleep(0.3)
+        upload_id = str(uuid.uuid4())
+        job = VideoJob(
+            image_urls=image_urls,
+            words=all_frame_narrations,
+            persistent_uuid=upload_id
+        )
+        logger.info(f"Need to run job: {job}")
+        # run_job(job)
 
         timestamped_filename = f"output_{int(time.time())}.mp4"
 
@@ -314,3 +329,49 @@ class Reel(fp.PoeBot):
         )
         yield fp.PartialResponse(text=f"Video Created!\n\n")
         # yield fp.PartialResponse(text=f"![video][{video_upload_response.inline_ref or ''}]\n\n", is_replace_response=True)
+
+
+def run_job(video_job: VideoJob):
+    headers = {
+        "Authorization": f"Bearer {FLY_API_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    arg = json.dumps(video_job)
+    machine_config = {
+        "name": f"video_job-{video_job.persistent_uuid}",
+        "config": {
+            "image": WORKER_IMAGE,
+            "env": {
+            },
+            "processes": [{
+                "name": "worker",
+                "entrypoint": ["python"],
+                "cmd": ["app/worker.py", arg]
+            }]
+        }
+    }
+    print(f"requesting to create a machine")
+    response = requests.post(f"https://api.machines.dev/v1/apps/{FLY_TASKS_APP}/machines", headers=headers, json=machine_config)
+    logger.info(f"response: {response}")
+    if response.status_code != 200:
+        logger.info(f"{response.text=}")
+        return {
+            "error": response.json()
+        }
+    response.raise_for_status()
+    response = response.json()
+    print(f"response: {response}")
+    machine_id = response["id"]
+    return {
+        "machine_id": machine_id,
+    }
+
+
+class VideoJob(BaseModel):
+    image_urls: list[str]
+    words: list[str]
+    persistent_uuid: str
+
+
+
+WORKER_IMAGE = "registry.fly.io/poe-stock-image-search:latest"
