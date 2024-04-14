@@ -21,6 +21,7 @@ import uuid
 import logging
 import json
 
+
 logger = logging.getLogger("uvicorn")
 
 # POE_INFERENCE_API_KEY = os.getenv("POE_INFERENCE_API_KEY")
@@ -366,8 +367,7 @@ def run_job(video_job: VideoJob):
     }
 
 
-@dataclass
-class VideoJob:
+class VideoJob(BaseModel):
     image_urls: list[str]
     words: list[str]
     persistent_uuid: str

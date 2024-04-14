@@ -186,10 +186,10 @@ app = fp.make_app([
     ),
 ])
 
-@app.get("/test")
-async def test():
-    reel.run_job()
 
+@app.post("/test")
+async def test(job: reel.VideoJob):
+    reel.run_job(job)
 
 
 if __name__ == "__main__":
