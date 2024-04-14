@@ -213,12 +213,13 @@ async def test():
     machine_config = dict(**MACHINE_CONFIG)
     machine_config["name"] = "test-image"
     print(f"requesting to create a machine")
-    response = requests.post(f"https://api.machines.dev/v1/apps/{FLY_TASKS_APP}/machines", headers=headers, json=machine_config)
-    response.raise_for_status()
-    # store the machine id so we can use it later to check if the job has completed
-    response = response.json()
-    print(f"response: {response}")
-    machine_id = response["id"]
+    # response = requests.post(f"https://api.machines.dev/v1/apps/{FLY_TASKS_APP}/machines", headers=headers, json=machine_config)
+    # response.raise_for_status()
+    # # store the machine id so we can use it later to check if the job has completed
+    # response = response.json()
+    # print(f"response: {response}")
+    # machine_id = response["id"]
+    machine_id = "test"
     return {
         "machine_id": machine_id,
         # "task_id": task_id
