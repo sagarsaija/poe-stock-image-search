@@ -278,8 +278,8 @@ class Reel(fp.PoeBot):
                     "prompt": image_description,
                     "negative_prompt": "lowres, bad anatomy, hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, text, black and white",
                     "image_size": {
-                        "height": 1024,
-                        "width": 1024,
+                        "width": 768,
+                        "height": 1344,
                     },
                     "num_inference_steps": 50,
                 },
