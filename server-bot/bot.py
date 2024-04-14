@@ -9,8 +9,11 @@ import httpx
 from dataclasses import dataclass
 import time
 import requests
+import logging
 
 import reel
+
+logger = logging.getLogger("uvicorn")
 
 STOCK_IMAGE_ACCESS_KEY = os.getenv("STOCK_IMAGE_POE_ACCESS_KEY")
 FAL_KEY = os.getenv("FAL_KEY")
@@ -182,8 +185,10 @@ app = fp.make_app([
     ),
 ])
 
-FLY_TASKS_APP = "poe-video-process"
+FLY_TASKS_APP = "poe-stock-image-search"
 FLY_API_TOKEN = os.getenv("FLY_API_TOKEN")
+
+print(f"FLY_API_TOKEN: {FLY_API_TOKEN[:3]}...{FLY_API_TOKEN[-3:]}")
 
 headers = {
     "Authorization": f"Bearer {FLY_API_TOKEN}",
@@ -207,15 +212,24 @@ MACHINE_CONFIG = {
 
 @app.get("/test")
 async def test():
+    print(f"printing: FLY_API_TOKEN: {FLY_API_TOKEN[:3]}...{FLY_API_TOKEN[-3:]}")
+    logger.error(f"logging: FLY_API_TOKEN: {FLY_API_TOKEN[:3]}...{FLY_API_TOKEN[-3:]}")
     machine_config = dict(**MACHINE_CONFIG)
     machine_config["name"] = "test-image"
-
+    print(f"requesting to create a machine")
     response = requests.post(f"https://api.machines.dev/v1/apps/{FLY_TASKS_APP}/machines", headers=headers, json=machine_config)
-    response.raise_for_status()
-    # store the machine id so we can use it later to check if the job has completed
-    response = response.json()
-    print(f"response: {response}")
-    machine_id = response["id"]
+    logger.info(f"response: {response}")
+    if response.status_code != 200:
+        logger.info(f"{response.text=}")
+        return {
+            "error": response.json()
+        }
+    # response.raise_for_status()
+    # # store the machine id so we can use it later to check if the job has completed
+    # response = response.json()
+    # print(f"response: {response}")
+    # machine_id = response["id"]
+    machine_id = "test"
     return {
         "machine_id": machine_id,
         # "task_id": task_id
