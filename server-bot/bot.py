@@ -13,7 +13,7 @@ import logging
 
 import reel
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("uvicorn")
 
 STOCK_IMAGE_ACCESS_KEY = os.getenv("STOCK_IMAGE_POE_ACCESS_KEY")
 FAL_KEY = os.getenv("FAL_KEY")
@@ -213,7 +213,7 @@ MACHINE_CONFIG = {
 @app.get("/test")
 async def test():
     print(f"printing: FLY_API_TOKEN: {FLY_API_TOKEN[:3]}...{FLY_API_TOKEN[-3:]}")
-    logger.info(f"logging: FLY_API_TOKEN: {FLY_API_TOKEN[:3]}...{FLY_API_TOKEN[-3:]}")
+    logger.error(f"logging: FLY_API_TOKEN: {FLY_API_TOKEN[:3]}...{FLY_API_TOKEN[-3:]}")
     machine_config = dict(**MACHINE_CONFIG)
     machine_config["name"] = "test-image"
     print(f"requesting to create a machine")
