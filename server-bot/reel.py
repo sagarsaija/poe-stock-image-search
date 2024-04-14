@@ -103,7 +103,7 @@ class StoryVideo(BaseModel):
     scenes: List[Scene] = Field(
         description="List of scenes in the short story")
     style_consistency: str = Field(
-        description="Consistency of the style of the story")
+        description="Description of the style of the story used to ensure consistency of storyboard art")
 
 
 def generate_scenes_with_llm(script):
@@ -163,7 +163,7 @@ def create_script(guideline: str, style: str):
     
     Please generate a storyboard and script for the following prompt. Include narration and a scene description. Do not include character voices, just voiceover narration at this stage. Thank you.
     
-    The story is just 40 seconds so it's not a full-length movie. Do not create more than 6 scenes.
+    The story is just 40 seconds so it's not a full-length movie. Do not create more than 2 scenes. The narration of each scene should not exceed 10 words.
         
     Story Inspiration:
     {guideline}
@@ -241,76 +241,88 @@ class Reel(fp.PoeBot):
         yield fp.PartialResponse(text=f"Script:\n{script}\n")
 
         yield fp.PartialResponse(text=f"Extracting scenes...\n")
-        scenes = generate_scenes_with_llm(script)
-        yield fp.PartialResponse(text=f"Scenes:\n{scenes.model_dump_json(indent=2)}\n")
+        story_video = generate_scenes_with_llm(script)
+        yield fp.PartialResponse(text=f"Scenes:\n{story_video.model_dump_json(indent=2)}\n")
 
-        words = guideline.split()
+        all_scene_narrations = []
+        all_scene_prompts = []
+        for scene in story_video.scenes:
+            scene_prompt = f"{scene.scene_description} in {style} style, describing {story_video.style_consistency}"
+            words = scene.narration.split()
+            frame_narrations = [words[i:i+4] for i in range(0, len(words), 4)]
+            yield fp.PartialResponse(text=f"Scene:\n{frame_narrations}\n")
+            all_scene_narrations.extend(frame_narrations)
+            for _ in frame_narrations:
+                all_scene_prompts.append(scene_prompt)
 
-        # create upto 4 words per scene
-        scenes = [words[i:i+4] for i in range(0, len(words), 4)]
+        for narration, prompt in zip(all_scene_narrations, all_scene_prompts):
+            yield fp.PartialResponse(text=f"Narration: {narration}, Prompt: {prompt}\n")
+        # words = guideline.split()
 
-        if len(scenes) > 30:
-            yield fp.PartialResponse(text=f"Content too long, truncating to 30 scenes\n")
+        # # create upto 4 words per scene
+        # scenes = [words[i:i+4] for i in range(0, len(words), 4)]
 
-        scenes = scenes[:30]
+        # if len(scenes) > 30:
+        #     yield fp.PartialResponse(text=f"Content too long, truncating to 30 scenes\n")
 
-        consistence_words = []
-        for scene in scenes:
-            word = random.choice([x for x in scene if x.lower() not in [
-                                 "is", "the", "a", "an", "are", "will", "shall"]])
-            consistence_words.append(word)
-        consistence_words = " ".join(consistence_words)
+        # scenes = scenes[:30]
 
-        coros = []
-        for scene in scenes:
-            scene_description = " ".join(scene)
-            scene_prompt = f"{scene_description} in {style} style, describing {consistence_words}"
-            print(f"Asking for scene: {scene_prompt}")
+        # consistence_words = []
+        # for scene in scenes:
+        #     word = random.choice([x for x in scene if x.lower() not in [
+        #                          "is", "the", "a", "an", "are", "will", "shall"]])
+        #     consistence_words.append(word)
+        # consistence_words = " ".join(consistence_words)
 
-            coro = self.fal_client.run(
-                "fal-ai/fast-sdxl",
-                arguments={
-                    "prompt": scene_prompt,
-                    "negative_prompt": "lowres, bad anatomy, hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, text, black and white",
-                    "image_size": {
-                        "height": 1920,
-                        "width": 1080,
-                    },
-                    "num_inference_steps": 50,
-                },
-            )
-            coros.append(coro)
+        # image_jobs = []
+        # for scene in story_video.scenes:
+        #     scene_prompt = f"{scene.scene_description} in {style} style, describing {story_video.style_consistency}"
+        #     yield fp.PartialResponse(text=f"Asking for scene: {scene_prompt}")
 
-        responses = await asyncio.gather(*coros)
+        #     image_job = self.fal_client.run(
+        #         "fal-ai/fast-sdxl",
+        #         arguments={
+        #             "prompt": scene_prompt,
+        #             "negative_prompt": "lowres, bad anatomy, hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, text, black and white",
+        #             "image_size": {
+        #                 "height": 1920,
+        #                 "width": 1080,
+        #             },
+        #             "num_inference_steps": 50,
+        #         },
+        #     )
+        #     image_jobs.append(image_job)
 
-        for i, response in enumerate(responses):
-            image_url = response["images"][0]["url"]
-            attachment_upload_response = await self.post_message_attachment(
-                message_id=request.message_id,
-                download_url=image_url,
-                is_inline=True,
-            )
-            yield fp.PartialResponse(text=f"![scene][{attachment_upload_response.inline_ref}]\n")
-            sub_resopnse = requests.get(image_url)
-            if sub_resopnse.status_code != 200:
-                continue
-            image_data = sub_resopnse.content
-            with open(f"scene_{i}.jpg", "wb") as file:
-                file.write(image_data)
-            print(f"Downloaded scene_{i}.jpg")
-            time.sleep(0.3)
+        # responses = await asyncio.gather(*image_jobs)
 
-        timestamped_filename = f"output_{int(time.time())}.mp4"
+        # for i, response in enumerate(responses):
+        #     image_url = response["images"][0]["url"]
+        #     attachment_upload_response = await self.post_message_attachment(
+        #         message_id=request.message_id,
+        #         download_url=image_url,
+        #         is_inline=True,
+        #     )
+        #     yield fp.PartialResponse(text=f"![scene][{attachment_upload_response.inline_ref}]\n")
+        #     sub_response = requests.get(image_url)
+        #     if sub_response.status_code != 200:
+        #         continue
+        #     image_data = sub_response.content
+        #     with open(f"scene_{i}.jpg", "wb") as file:
+        #         file.write(image_data)
+        #     print(f"Downloaded scene_{i}.jpg")
+        #     time.sleep(0.3)
 
-        create_video_from_images(
-            [f"scene_{i}.jpg" for i in range(len(scenes))], scenes, timestamped_filename)
-        with open(timestamped_filename, "rb") as file:
-            file_data = file.read()
-        video_upload_response = await self.post_message_attachment(
-            message_id=request.message_id,
-            file_data=file_data,
-            filename=timestamped_filename,
-            # is_inline=True,
-        )
-        yield fp.PartialResponse(text=f"Video Created!\n\n")
+        # timestamped_filename = f"output_{int(time.time())}.mp4"
+
+        # create_video_from_images(
+        #     [f"scene_{i}.jpg" for i in range(len(scenes))], scenes, timestamped_filename)
+        # with open(timestamped_filename, "rb") as file:
+        #     file_data = file.read()
+        # video_upload_response = await self.post_message_attachment(
+        #     message_id=request.message_id,
+        #     file_data=file_data,
+        #     filename=timestamped_filename,
+        #     # is_inline=True,
+        # )
+        # yield fp.PartialResponse(text=f"Video Created!\n\n")
         # yield fp.PartialResponse(text=f"![video][{video_upload_response.inline_ref or ""}]\n\n", is_replace_response=True)
