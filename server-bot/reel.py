@@ -145,7 +145,7 @@ def create_video_from_images(image_files, captions, output_file):
              for file in image_files]
 
     clips_with_caption = [
-        add_subtitle(clip, " ".join(caption)) for (clip, caption) in zip(clips, captions)
+        add_subtitle(clip, caption) for (clip, caption) in zip(clips, captions)
     ]
 
     # clips with subtitles
@@ -251,24 +251,24 @@ class Reel(fp.PoeBot):
         story_video = generate_scenes_with_llm(script)
         yield fp.PartialResponse(text=f"Scenes:\n{story_video.model_dump_json(indent=2)}\n")
 
-        all_scene_narrations = []
-        all_scene_descriptions = []
+        all_frame_narrations = []
+        all_frame_descriptions = []
         for scene in story_video.scenes:
             scene_prompt = f"{scene.scene_description} in {style} style, describing {story_video.style_consistency}"
             frame_narrations = create_narration_fragments(scene.narration)
-            all_scene_narrations.extend(frame_narrations)
-            for _ in frame_narrations:
-                all_scene_descriptions.append(scene_prompt)
+            for narration in frame_narrations:
+                all_frame_narrations.append(narration)
+                all_frame_descriptions.append(scene_prompt)
 
-        for narration, description in zip(all_scene_narrations, all_scene_descriptions):
+        for narration, description in zip(all_frame_narrations, all_frame_descriptions):
             yield fp.PartialResponse(text=f"Frame Narration: {narration}, Frame Description: {description}\n")
 
         image_jobs = []
-        for scene_description in all_scene_descriptions:
+        for image_description in all_frame_descriptions:
             image_job = self.fal_client.run(
                 "fal-ai/fast-sdxl",
                 arguments={
-                    "prompt": scene_description,
+                    "prompt": image_description,
                     "negative_prompt": "lowres, bad anatomy, hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry, text, black and white",
                     "image_size": {
                         "height": 1920,
@@ -281,8 +281,10 @@ class Reel(fp.PoeBot):
 
         responses = await asyncio.gather(*image_jobs)
 
+        image_urls = []
         for i, response in enumerate(responses):
             image_url = response["images"][0]["url"]
+            image_urls.append(image_url)
             attachment_upload_response = await self.post_message_attachment(
                 message_id=request.message_id,
                 download_url=image_url,
@@ -301,7 +303,7 @@ class Reel(fp.PoeBot):
         timestamped_filename = f"output_{int(time.time())}.mp4"
 
         create_video_from_images(
-            [f"scene_{i}.jpg" for i in range(len(scenes))], scenes, timestamped_filename)
+            [f"scene_{i}.jpg" for i in range(len(all_frame_narrations))], all_frame_narrations, timestamped_filename)
         with open(timestamped_filename, "rb") as file:
             file_data = file.read()
         video_upload_response = await self.post_message_attachment(
