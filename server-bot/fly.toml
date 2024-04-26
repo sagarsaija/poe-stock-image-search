@@ -1,11 +1,18 @@
-app = 'poe-stock-image-search'
+# fly.toml app configuration file generated for poe-stock-image-search-summer-moon-4075 on 2024-04-26T14:43:09-07:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'poe-stock-image-search-summer-moon-4075'
 primary_region = 'lax'
+
+[build]
 
 [env]
   PORT = '8080'
 
 [http_service]
-  internal_port = 8080
+  internal_port = 8000
   force_https = true
   auto_stop_machines = true
   auto_start_machines = true
@@ -13,6 +20,4 @@ primary_region = 'lax'
   processes = ['app']
 
 [[vm]]
-  memory = '16gb'
-  cpu_kind = 'performance'
-  cpus = 8
+  size = 'performance-8x'
