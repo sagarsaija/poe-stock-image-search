@@ -1,5 +1,9 @@
 import logging
+import time
 
 logger = logging.getLogger("uvicorn")
 
-logger.info("Hello World!")
+for _ in range(60):
+    logger.info("Hello World!")
+    print("Hello World!")
+    time.sleep(1)
